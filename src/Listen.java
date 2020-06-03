@@ -6,6 +6,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Listen extends ListenerAdapter {
 
@@ -46,6 +48,7 @@ public class Listen extends ListenerAdapter {
         //Start game = Setting mv_gamestate to 1
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
             mv_gameState = 1;
+            //TODO Add minimum number of players
             //openPrivateChannel gives a channel instance as a response
             //PrivateChannel tempChannel = ma_playerList.get(0).openPrivateChannel().complete();
             //tempChannel.sendMessage("Hey").queue();
@@ -55,6 +58,7 @@ public class Listen extends ListenerAdapter {
 
     public void addPlayer (String iv_displayedName, MessageChannel lr_mChannel)  {
         User lr_user = null;
+        //Get added player as user, if not, give back error
         try {
             lr_user = mr_guild.getMembersByEffectiveName(iv_displayedName, true).get(0).getUser();
         } catch (Exception ex) {
@@ -63,12 +67,12 @@ public class Listen extends ListenerAdapter {
             lr_mChannel.sendMessage(lv_errorOutput).queue();
             return;
         }
-
+        //Add player if list is empty
         if (ma_playerList.isEmpty()) {
             ma_playerList.add(new PlayerRoles(lr_user));
             return;
         }
-
+        //Add player if he is not already added
         for (PlayerRoles lr_addedUser : ma_playerList) {
             if (lr_addedUser.mr_user.equals(lr_user)) {
                 return;
@@ -80,6 +84,29 @@ public class Listen extends ListenerAdapter {
 
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
+        int lv_numberOfWolves;
+        for (PlayerRoles lv_roles : ma_playerList) {
+            lv_roles.nameOfRole = "citizen";
+        }
+
+        //First werewolf
+        ma_playerList.get(ThreadLocalRandom.current().nextInt(1,lv_numberOfPlayers)).nameOfRole = "werewolf";
+        
+        if (lv_numberOfPlayers > 6) {
+            boolean lv_randomIsWerewolf;
+            //If second werewolf is first werewolf (number), roll dice again
+            do {
+                int lv_randomNumber = ThreadLocalRandom.current().nextInt(1, lv_numberOfPlayers);
+                if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
+                    lv_randomIsWerewolf = true;
+                } else {
+                    lv_randomIsWerewolf = false;
+                }
+            } while (lv_randomIsWerewolf == true);
+        }
+
+
+
     }
 
 }
