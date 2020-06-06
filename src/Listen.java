@@ -1,13 +1,15 @@
+import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class Listen extends ListenerAdapter {
 
@@ -39,20 +41,45 @@ public class Listen extends ListenerAdapter {
             mv_gameState = 0;
             ma_playerList.clear();
         }
+
+        //TODO command to list players
+
         //Add players
         if (la_content[1].equals("add") && (mv_gameState == 0) && (la_content.length > 2)) {
+            //TODO Give success message when someone was added
             for (int lv_loops = 2; la_content.length >= lv_loops + 1; lv_loops ++) {
                 addPlayer(la_content[lv_loops],ir_event.getChannel());
             }
         }
-        //Start game = Setting mv_gamestate to 1
+        //Start game = Setting mv_gamestate to 1 at the end
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
-            mv_gameState = 1;
-            //TODO Add minimum number of players
-            //openPrivateChannel gives a channel instance as a response
-            //PrivateChannel tempChannel = ma_playerList.get(0).openPrivateChannel().complete();
-            //tempChannel.sendMessage("Hey").queue();
+            if (ma_playerList.size() < 5) {
+                ir_event.getChannel().sendMessage(Main.getParameter("translation.csv", "Not enough players to start")).queue();
+                return;
+            }
+            chooseRoles();
+            //Send role to every player
+            for (PlayerRoles lr_playerRole : ma_playerList) {
+                PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
+                String lv_whichRole = Main.getParameter("translation.csv","You are a [ROLE]");
+                lv_whichRole = lv_whichRole.replace("[ROLE]",lr_playerRole.getNameOfRole());
+                lr_tempChannel.sendMessage(lv_whichRole).queue();
+            }
+            //Send starting text -> players sleep the end
+            for (PlayerRoles lr_playerRole : ma_playerList) {
+                PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
+                String lv_startingText = Main.getParameter("translation.csv","starting text (players should sleep at the end)");
+                lr_tempChannel.sendMessage(lv_startingText).queueAfter(5,TimeUnit.SECONDS);
+                //Send wolves messages to pick first victim
+                //TODO send messages to wolf
+                mv_gameState = 1;
+            }
         }
+
+    }
+
+    @Override
+    public void onPrivateMessageReceived(PrivateMessageReceivedEvent ir_event) {
 
     }
 
@@ -84,7 +111,7 @@ public class Listen extends ListenerAdapter {
 
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
-        int lv_numberOfWolves;
+        boolean lv_randomIsWerewolf;
         for (PlayerRoles lv_roles : ma_playerList) {
             lv_roles.nameOfRole = "citizen";
         }
@@ -93,20 +120,37 @@ public class Listen extends ListenerAdapter {
         ma_playerList.get(ThreadLocalRandom.current().nextInt(1,lv_numberOfPlayers)).nameOfRole = "werewolf";
         
         if (lv_numberOfPlayers > 6) {
-            boolean lv_randomIsWerewolf;
             //If second werewolf is first werewolf (number), roll dice again
             do {
                 int lv_randomNumber = ThreadLocalRandom.current().nextInt(1, lv_numberOfPlayers);
                 if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
                     lv_randomIsWerewolf = true;
                 } else {
+                    ma_playerList.get(lv_randomNumber).nameOfRole = "werewolf";
                     lv_randomIsWerewolf = false;
                 }
             } while (lv_randomIsWerewolf == true);
         }
 
-
+        //Choose witch
+        do {
+            int lv_randomNumber = ThreadLocalRandom.current().nextInt(1, lv_numberOfPlayers);
+            if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
+                lv_randomIsWerewolf = true;
+            } else {
+                ma_playerList.get(lv_randomNumber).nameOfRole = "witch";
+                lv_randomIsWerewolf = false;
+            }
+        } while (lv_randomIsWerewolf == true);
 
     }
 
 }
+
+
+
+
+
+//openPrivateChannel gives a channel instance as a response
+//PrivateChannel tempChannel = ma_playerList.get(0).openPrivateChannel().complete();
+//tempChannel.sendMessage("Hey").queue();
