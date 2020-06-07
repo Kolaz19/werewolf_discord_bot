@@ -37,7 +37,7 @@ public class Listen extends ListenerAdapter {
             return;
         }
 
-        if (la_content[1].equals("restart") && (la_content.length == 2)) {
+        if (la_content[1].equals("reset") && (la_content.length == 2)) {
             mv_gameState = 0;
             ma_playerList.clear();
         }
@@ -53,7 +53,7 @@ public class Listen extends ListenerAdapter {
         }
         //Start game = Setting mv_gamestate to 1 at the end
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
-            if (ma_playerList.size() < 5) {
+            if (ma_playerList.size() < 2) {  //TODO change to 5 again
                 ir_event.getChannel().sendMessage(Main.getParameter("translation.csv", "Not enough players to start")).queue();
                 return;
             }
@@ -68,7 +68,7 @@ public class Listen extends ListenerAdapter {
             //Send starting text -> players sleep the end
             for (PlayerRoles lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
-                String lv_startingText = Main.getParameter("translation.csv","starting text (players should sleep at the end)");
+                String lv_startingText = Main.getParameter("translation.csv","introduction text (players should sleep at the end)");
                 lr_tempChannel.sendMessage(lv_startingText).queueAfter(5,TimeUnit.SECONDS);
                 //Send wolves messages to pick first victim
                 //TODO send messages to wolf
@@ -83,31 +83,30 @@ public class Listen extends ListenerAdapter {
 
     }
 
-    public void addPlayer (String iv_displayedName, MessageChannel lr_mChannel)  {
+    public void addPlayer (String iv_displayedName, MessageChannel lr_mChannel) {
         User lr_user = null;
         //Get added player as user, if not, give back error
         try {
             lr_user = mr_guild.getMembersByEffectiveName(iv_displayedName, true).get(0).getUser();
         } catch (Exception ex) {
-            String lv_errorOutput = Main.getParameter("translation.csv","user [NAME] was not found");
-            lv_errorOutput = lv_errorOutput.replace("[NAME]",iv_displayedName);
+            String lv_errorOutput = Main.getParameter("translation.csv", "user [NAME] was not found");
+            lv_errorOutput = lv_errorOutput.replace("[NAME]", iv_displayedName);
             lr_mChannel.sendMessage(lv_errorOutput).queue();
             return;
         }
+        PlayerRoles roleToAdd = new PlayerRoles(lr_user);
+
         //Add player if list is empty
         if (ma_playerList.isEmpty()) {
-            ma_playerList.add(new PlayerRoles(lr_user));
+            ma_playerList.add(roleToAdd);
             return;
-        }
         //Add player if he is not already added
-        for (PlayerRoles lr_addedUser : ma_playerList) {
-            if (lr_addedUser.mr_user.equals(lr_user)) {
-                return;
-            } else {
-                ma_playerList.add(new PlayerRoles(lr_user));
-            }
+        } else if (!ma_playerList.contains(roleToAdd)) {
+            ma_playerList.add(roleToAdd);
         }
     }
+
+
 
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
@@ -116,13 +115,13 @@ public class Listen extends ListenerAdapter {
             lv_roles.nameOfRole = "citizen";
         }
 
-        //First werewolf
-        ma_playerList.get(ThreadLocalRandom.current().nextInt(1,lv_numberOfPlayers)).nameOfRole = "werewolf";
+        //First werewolf (minus 1 because array starts with 0)
+        ma_playerList.get(ThreadLocalRandom.current().nextInt(lv_numberOfPlayers-1)).nameOfRole = "werewolf";
         
         if (lv_numberOfPlayers > 6) {
             //If second werewolf is first werewolf (number), roll dice again
             do {
-                int lv_randomNumber = ThreadLocalRandom.current().nextInt(1, lv_numberOfPlayers);
+                int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers+1);
                 if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
                     lv_randomIsWerewolf = true;
                 } else {
@@ -134,7 +133,7 @@ public class Listen extends ListenerAdapter {
 
         //Choose witch
         do {
-            int lv_randomNumber = ThreadLocalRandom.current().nextInt(1, lv_numberOfPlayers);
+            int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers+1);
             if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
                 lv_randomIsWerewolf = true;
             } else {

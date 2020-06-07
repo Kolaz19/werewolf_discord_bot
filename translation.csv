@@ -1,7 +1,8 @@
 //Don't change values before equal sign!
+citizen=Dorfbewohner
 werewolf=Wehrwolf
 witch=Hexe
 user [NAME] was not found=Der Member [NAME] wurde nicht gefunden
 Not enough players to start=Zu wenig Spieler!
 You are a [ROLE]=Deine Rolle: [ROLE]
-starting text (players should sleep at the end)=
+introduction text (players should sleep at the end)=Hey
