@@ -18,6 +18,8 @@ public class Listen extends ListenerAdapter {
     private long mv_serverId;
     List<PlayerRoles> ma_playerList;
     private int mv_gameState;
+    private int mv_numberOfLivingPeople;
+    private int mv_numberOfLivingWerewolves;
 
 
     Listen(JDA ir_jda) throws IOException {
@@ -53,7 +55,7 @@ public class Listen extends ListenerAdapter {
         }
         //Start game = Setting mv_gamestate to 1 at the end
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
-            if (ma_playerList.size() < 2) {  //TODO change to 5 again
+            if (ma_playerList.size() < 2) { //TODO change back to 5
                 ir_event.getChannel().sendMessage(Main.getParameter("translation.csv", "Not enough players to start")).queue();
                 return;
             }
@@ -65,15 +67,31 @@ public class Listen extends ListenerAdapter {
                 lv_whichRole = lv_whichRole.replace("[ROLE]",lr_playerRole.getNameOfRole());
                 lr_tempChannel.sendMessage(lv_whichRole).queue();
             }
-            //Send starting text -> players sleep the end
+            //Send starting text -> players sleep at the end
             for (PlayerRoles lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
                 String lv_startingText = Main.getParameter("translation.csv","introduction text (players should sleep at the end)");
                 lr_tempChannel.sendMessage(lv_startingText).queueAfter(5,TimeUnit.SECONDS);
                 //Send wolves messages to pick first victim
-                //TODO send messages to wolf
                 mv_gameState = 1;
             }
+
+            String lv_chooseFirstVictim;
+            if (getNumberOfLivingWerewolves() > 1) {
+                lv_chooseFirstVictim = Main.getParameter("translation.csv","Choose the first victim with your brothers");
+            } else {
+                lv_chooseFirstVictim = Main.getParameter("translation.csv","Pick your first victim");
+            }
+
+            for (PlayerRoles lr_playerRole : ma_playerList) {
+                if (lr_playerRole.nameOfRole == "werewolf") {
+                    lr_playerRole.mr_user.openPrivateChannel().complete().sendMessage(lv_chooseFirstVictim).queueAfter(10,TimeUnit.SECONDS);
+                    //TODO List the other werewolves
+                }
+            }
+            
+            
+
         }
 
     }
@@ -106,8 +124,6 @@ public class Listen extends ListenerAdapter {
         }
     }
 
-
-
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
         boolean lv_randomIsWerewolf;
@@ -116,12 +132,12 @@ public class Listen extends ListenerAdapter {
         }
 
         //First werewolf (minus 1 because array starts with 0)
-        ma_playerList.get(ThreadLocalRandom.current().nextInt(lv_numberOfPlayers-1)).nameOfRole = "werewolf";
+        ma_playerList.get(ThreadLocalRandom.current().nextInt(lv_numberOfPlayers)).nameOfRole = "werewolf";
         
         if (lv_numberOfPlayers > 6) {
             //If second werewolf is first werewolf (number), roll dice again
             do {
-                int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers+1);
+                int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers);
                 if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
                     lv_randomIsWerewolf = true;
                 } else {
@@ -133,7 +149,7 @@ public class Listen extends ListenerAdapter {
 
         //Choose witch
         do {
-            int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers+1);
+            int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers);
             if (ma_playerList.get(lv_randomNumber).nameOfRole.equals("werewolf")) {
                 lv_randomIsWerewolf = true;
             } else {
@@ -144,6 +160,29 @@ public class Listen extends ListenerAdapter {
 
     }
 
+    private void refreshPlayercount () {
+        if (ma_playerList.isEmpty()) {
+            return;
+        }
+        mv_numberOfLivingPeople = 0;
+        mv_numberOfLivingWerewolves = 0;
+        for (PlayerRoles lr_playerRoles : ma_playerList) {
+            switch (lr_playerRoles.nameOfRole) {
+                case "citizen": mv_numberOfLivingPeople++;
+                case "witch": mv_numberOfLivingPeople++;
+                case "werewolf" : mv_numberOfLivingWerewolves++;
+            }
+        }
+    }
+
+    public int getNumberOfLivingWerewolves () {
+        refreshPlayercount();
+        return mv_numberOfLivingWerewolves;
+    }
+    public int getNumberOfLivingPeople () {
+        refreshPlayercount();
+        return mv_numberOfLivingPeople;
+    }
 }
 
 

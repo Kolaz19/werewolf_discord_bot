@@ -1,8 +1,10 @@
 //Don't change values before equal sign!
 citizen=Dorfbewohner
-werewolf=Wehrwolf
+werewolf=Werwolf
 witch=Hexe
 user [NAME] was not found=Der Member [NAME] wurde nicht gefunden
 Not enough players to start=Zu wenig Spieler!
 You are a [ROLE]=Deine Rolle: [ROLE]
-introduction text (players should sleep at the end)=Hey
+introduction text (players should sleep at the end)=Es wird Nacht im Düsterwald. Die Bürder gehen schlafen.
+Pick your first victim=Wähle dein erstes Opfer!
+Choose the first victim with your brothers=Wählt euer erstes Opfer!
