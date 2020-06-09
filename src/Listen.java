@@ -13,13 +13,13 @@ import java.util.concurrent.TimeUnit;
 
 public class Listen extends ListenerAdapter {
 
-    private JDA mr_jda;
-    private Guild mr_guild;
-    private long mv_serverId;
-    List<PlayerRoles> ma_playerList;
+    private final JDA mr_jda;
+    private final Guild mr_guild;
+    private final long mv_serverId;
     private int mv_gameState;
     private int mv_numberOfLivingPeople;
     private int mv_numberOfLivingWerewolves;
+    List<PlayerRoles> ma_playerList;
 
 
     Listen(JDA ir_jda) throws IOException {
@@ -33,7 +33,9 @@ public class Listen extends ListenerAdapter {
     @Override
     public void onMessageReceived(MessageReceivedEvent ir_event) {
 
-        String[] la_content = ir_event.getMessage().getContentRaw().split(" ");
+        String[] la_content = ir_event.getMessage()
+                                      .getContentRaw()
+                                      .split(" ");
         //See if message is werewolf related, else stop
         if (!la_content[0].equals("!ww") || (la_content.length == 1)) {
             return;
@@ -43,20 +45,32 @@ public class Listen extends ListenerAdapter {
             mv_gameState = 0;
             ma_playerList.clear();
         }
-
         //TODO command to list players
+        if (la_content[1].equals("list") && (la_content.length == 2)) {
+            String lv_playerListMessage = Main.getParameter("translation.csv","Added players:") + " ";
+            if (ma_playerList.isEmpty()) {
+                lv_playerListMessage = Main.getParameter("translation.csv","No added players yet");
+            } else {
+                for (PlayerRoles lr_playerRole : ma_playerList) {
+                    lv_playerListMessage = lv_playerListMessage + lr_playerRole.mr_user.getName() + " ";
+                }
+            }
+            ir_event.getChannel().sendMessage(lv_playerListMessage).queue();
+        }
 
         //Add players
         if (la_content[1].equals("add") && (mv_gameState == 0) && (la_content.length > 2)) {
-            //TODO Give success message when someone was added
             for (int lv_loops = 2; la_content.length >= lv_loops + 1; lv_loops ++) {
                 addPlayer(la_content[lv_loops],ir_event.getChannel());
             }
         }
-        //Start game = Setting mv_gamestate to 1 at the end
+
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
+            //Check if enough players
             if (ma_playerList.size() < 2) { //TODO change back to 5
-                ir_event.getChannel().sendMessage(Main.getParameter("translation.csv", "Not enough players to start")).queue();
+                ir_event.getChannel()
+                        .sendMessage(Main.getParameter("translation.csv", "Not enough players to start"))
+                        .queue();
                 return;
             }
             chooseRoles();
@@ -66,27 +80,42 @@ public class Listen extends ListenerAdapter {
                 String lv_whichRole = Main.getParameter("translation.csv","You are a [ROLE]");
                 lv_whichRole = lv_whichRole.replace("[ROLE]",lr_playerRole.getNameOfRole());
                 lr_tempChannel.sendMessage(lv_whichRole).queue();
+                //If not enough werewolves, continue
+                if ((getNumberOfLivingWerewolves() == 1) || (!lr_playerRole.nameOfRole.equals("werewolf"))) {
+                    continue;
+                }
+                //Send current werewolf name of partner-werewolf
+                for (PlayerRoles lr_playerRole2 : ma_playerList) {
+                    if ((lr_playerRole2.nameOfRole.equals("werewolf")) && (lr_playerRole != lr_playerRole2)) {
+                        String lv_werewolfFriend = Main.getParameter("translation.csv","[NAME] is your werewolf brother");
+                        lv_werewolfFriend = lv_werewolfFriend.replace("[NAME]",lr_playerRole.mr_user.getName());
+                        lr_playerRole.mr_user.openPrivateChannel()
+                                             .complete()
+                                             .sendMessage(lv_werewolfFriend)
+                                             .queue();
+                    }
+                }
             }
             //Send starting text -> players sleep at the end
             for (PlayerRoles lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
                 String lv_startingText = Main.getParameter("translation.csv","introduction text (players should sleep at the end)");
                 lr_tempChannel.sendMessage(lv_startingText).queueAfter(5,TimeUnit.SECONDS);
-                //Send wolves messages to pick first victim
-                mv_gameState = 1;
             }
-
+            //Choose text based on amount of werewolves
             String lv_chooseFirstVictim;
             if (getNumberOfLivingWerewolves() > 1) {
                 lv_chooseFirstVictim = Main.getParameter("translation.csv","Choose the first victim with your brothers");
             } else {
                 lv_chooseFirstVictim = Main.getParameter("translation.csv","Pick your first victim");
             }
-
+            //Send wolves the message to choose the first victim
             for (PlayerRoles lr_playerRole : ma_playerList) {
                 if (lr_playerRole.nameOfRole == "werewolf") {
-                    lr_playerRole.mr_user.openPrivateChannel().complete().sendMessage(lv_chooseFirstVictim).queueAfter(10,TimeUnit.SECONDS);
-                    //TODO List the other werewolves
+                    lr_playerRole.mr_user.openPrivateChannel()
+                                         .complete()
+                                         .sendMessage(lv_chooseFirstVictim)
+                                         .queueAfter(10,TimeUnit.SECONDS);
                 }
             }
             
@@ -105,24 +134,26 @@ public class Listen extends ListenerAdapter {
         User lr_user = null;
         //Get added player as user, if not, give back error
         try {
-            lr_user = mr_guild.getMembersByEffectiveName(iv_displayedName, true).get(0).getUser();
+            lr_user = mr_guild.getMembersByEffectiveName(iv_displayedName, true)
+                    .get(0)
+                    .getUser();
         } catch (Exception ex) {
             String lv_errorOutput = Main.getParameter("translation.csv", "user [NAME] was not found");
             lv_errorOutput = lv_errorOutput.replace("[NAME]", iv_displayedName);
             lr_mChannel.sendMessage(lv_errorOutput).queue();
             return;
         }
-        PlayerRoles roleToAdd = new PlayerRoles(lr_user);
 
-        //Add player if list is empty
-        if (ma_playerList.isEmpty()) {
+        PlayerRoles roleToAdd = new PlayerRoles(lr_user);
+        //Add player and give out success message
+        if ((ma_playerList.isEmpty()) || (!ma_playerList.contains(roleToAdd))) {
             ma_playerList.add(roleToAdd);
-            return;
-        //Add player if he is not already added
-        } else if (!ma_playerList.contains(roleToAdd)) {
-            ma_playerList.add(roleToAdd);
+            String lv_nameWasAdded = Main.getParameter("translation.csv","[NAME] was added");
+            lv_nameWasAdded = lv_nameWasAdded.replace("[NAME]",lr_user.getName());
+            lr_mChannel.sendMessage(lv_nameWasAdded).queue();
         }
     }
+
 
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
@@ -132,7 +163,8 @@ public class Listen extends ListenerAdapter {
         }
 
         //First werewolf (minus 1 because array starts with 0)
-        ma_playerList.get(ThreadLocalRandom.current().nextInt(lv_numberOfPlayers)).nameOfRole = "werewolf";
+        int lv_numberOfFirstWerewolf = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers);
+        ma_playerList.get(lv_numberOfFirstWerewolf).nameOfRole = "werewolf";
         
         if (lv_numberOfPlayers > 6) {
             //If second werewolf is first werewolf (number), roll dice again

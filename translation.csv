@@ -8,3 +8,7 @@ You are a [ROLE]=Deine Rolle: [ROLE]
 introduction text (players should sleep at the end)=Es wird Nacht im Düsterwald. Die Bürder gehen schlafen.
 Pick your first victim=Wähle dein erstes Opfer!
 Choose the first victim with your brothers=Wählt euer erstes Opfer!
+[NAME] is your werewolf brother=[NAME] ist dein Werwolf Bruder!
+[NAME] was added=[NAME] wurde hinzugefügt
+Added players:=Hinzugefügt:
+No added players yet=Noch keine Spieler hinzugefügt!

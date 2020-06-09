@@ -17,10 +17,10 @@ public class Main {
 
     public static void main (String[] args) throws LoginException, InterruptedException, IOException {
         gr_jda = JDABuilder.createDefault(Main.getParameter("server.csv","bot_token"))
-                .setChunkingFilter(ChunkingFilter.ALL)
-                .setMemberCachePolicy(MemberCachePolicy.ALL)
-                .enableIntents(GatewayIntent.GUILD_MEMBERS)
-                .build();
+                           .setChunkingFilter(ChunkingFilter.ALL)
+                           .setMemberCachePolicy(MemberCachePolicy.ALL)
+                           .enableIntents(GatewayIntent.GUILD_MEMBERS)
+                           .build();
         //Wait till connection is ready
         gr_jda.awaitReady();
         gr_jda.addEventListener(new Listen(gr_jda));
