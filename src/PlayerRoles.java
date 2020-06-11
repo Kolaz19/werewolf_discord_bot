@@ -8,7 +8,6 @@ public class PlayerRoles {
             mr_user = ir_user;
         }
 
-
         String getNameOfRole () {
             //roles get translated!
             return Main.getParameter("translation.csv",nameOfRole);
