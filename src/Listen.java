@@ -78,13 +78,31 @@ public class Listen extends ListenerAdapter {
                 return;
             }
             chooseRoles();
-            //Send role to every player
+
+            //Choose text to kill the first victim based on amount of werewolves
+            String lv_chooseFirstVictim;
+            if (getNumberOfLivingWerewolves() > 1) {
+                lv_chooseFirstVictim = Main.getParameter("translation.csv", "Choose the first victim with your brothers");
+            } else {
+                lv_chooseFirstVictim = Main.getParameter("translation.csv", "Pick your first victim");
+            }
+
+
             for (PlayerRoles lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
+                //Send role to every player
                 String lv_whichRole = Main.getParameter("translation.csv", "You are a [ROLE]");
                 lv_whichRole = lv_whichRole.replace("[ROLE]", lr_playerRole.getNameOfRole());
                 lr_tempChannel.sendMessage(lv_whichRole).queue();
-                //If only one werewolves, continue
+                //Send starting text -> players sleep at the end (after 5 seconds)
+                String lv_startingText = Main.getParameter("translation.csv", "introduction text (players should sleep at the end)");
+                lr_tempChannel.sendMessage(lv_startingText).queueAfter(5, TimeUnit.SECONDS);
+                //Send wolves the message to choose the first victim
+                if (lr_playerRole.nameOfRole.equals("werewolf")) {
+                    lr_tempChannel.sendMessage(lv_chooseFirstVictim).queueAfter(10, TimeUnit.SECONDS);
+                    lr_tempChannel.sendMessage(getLivingPlayerNames("werewolf")).queueAfter(12,TimeUnit.SECONDS);
+                }
+                //If only one werewolves, next loop
                 if ((getNumberOfLivingWerewolves() == 1) || (!lr_playerRole.nameOfRole.equals("werewolf"))) {
                     continue;
                 }
@@ -100,29 +118,6 @@ public class Listen extends ListenerAdapter {
                     }
                 }
             }
-            //Send starting text -> players sleep at the end
-            for (PlayerRoles lr_playerRole : ma_playerList) {
-                PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
-                String lv_startingText = Main.getParameter("translation.csv", "introduction text (players should sleep at the end)");
-                lr_tempChannel.sendMessage(lv_startingText).queueAfter(5, TimeUnit.SECONDS);
-            }
-            //Choose text to kill the first victim based on amount of werewolves
-            String lv_chooseFirstVictim;
-            if (getNumberOfLivingWerewolves() > 1) {
-                lv_chooseFirstVictim = Main.getParameter("translation.csv", "Choose the first victim with your brothers");
-            } else {
-                lv_chooseFirstVictim = Main.getParameter("translation.csv", "Pick your first victim");
-            }
-            //Send wolves the message to choose the first victim
-            for (PlayerRoles lr_playerRole : ma_playerList) {
-                if (lr_playerRole.nameOfRole == "werewolf") {
-                    lr_playerRole.mr_user.openPrivateChannel()
-                            .complete()
-                            .sendMessage(lv_chooseFirstVictim)
-                            .queueAfter(10, TimeUnit.SECONDS);
-                }
-            }
-
             mv_gameState = 1;
         }
     }
@@ -181,7 +176,6 @@ public class Listen extends ListenerAdapter {
                 }
             } while (lv_randomIsWerewolf == true);
         }
-
         //Choose witch
         do {
             int lv_randomNumber = ThreadLocalRandom.current().nextInt(lv_numberOfPlayers);
@@ -218,6 +212,23 @@ public class Listen extends ListenerAdapter {
         refreshPlayercount();
         return mv_numberOfLivingPeople;
     }
+
+    public String getLivingPlayerNames(String iv_nameOfRole) {
+        String lv_livingPlayers = "";
+        for (PlayerRoles lr_roles : ma_playerList) {
+            if (!lr_roles.nameOfRole.equals("dead")) {
+                lv_livingPlayers = lv_livingPlayers + " | " + lr_roles.mr_user.getName();
+            }
+        }
+        lv_livingPlayers = lv_livingPlayers.substring(2);
+
+
+
+
+        return lv_livingPlayers;
+    }
+
+
 }
 
 

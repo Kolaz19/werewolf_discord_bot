@@ -14,7 +14,6 @@ public class Gamestates {
         if (!isPlayerRole(ir_event.getAuthor(),"werewolf")) {
             return;
         }
-
         
     }
 
