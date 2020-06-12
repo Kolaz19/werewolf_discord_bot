@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class Listen extends ListenerAdapter {
 
     private final JDA mr_jda;
-    private final Guild mr_guild;
+    public final Guild mr_guild;
     private final long mv_serverId;
     private int mv_gameState;
     private int mv_numberOfLivingPeople;
@@ -81,10 +81,13 @@ public class Listen extends ListenerAdapter {
 
             //Choose text to kill the first victim based on amount of werewolves
             String lv_chooseFirstVictim;
+            String lv_infoChooseFirstVictim;
             if (getNumberOfLivingWerewolves() > 1) {
                 lv_chooseFirstVictim = Main.getParameter("translation.csv", "Choose the first victim with your brothers");
+                lv_infoChooseFirstVictim = Main.getParameter("translation.csv","The werewolves choose their first victim now...");
             } else {
                 lv_chooseFirstVictim = Main.getParameter("translation.csv", "Pick your first victim");
+                lv_infoChooseFirstVictim = Main.getParameter("translation.csv","The werewolf does choose it's first victim now...");
             }
 
 
@@ -97,10 +100,12 @@ public class Listen extends ListenerAdapter {
                 //Send starting text -> players sleep at the end (after 5 seconds)
                 String lv_startingText = Main.getParameter("translation.csv", "introduction text (players should sleep at the end)");
                 lr_tempChannel.sendMessage(lv_startingText).queueAfter(5, TimeUnit.SECONDS);
-                //Send wolves the message to choose the first victim
+                //Send wolves the message to choose the first victim or give the other players the info that they are doing it
                 if (lr_playerRole.nameOfRole.equals("werewolf")) {
                     lr_tempChannel.sendMessage(lv_chooseFirstVictim).queueAfter(10, TimeUnit.SECONDS);
                     lr_tempChannel.sendMessage(getLivingPlayerNames("werewolf")).queueAfter(12,TimeUnit.SECONDS);
+                } else {
+                    lr_tempChannel.sendMessage(lv_infoChooseFirstVictim).queueAfter(10,TimeUnit.SECONDS);
                 }
                 //If only one werewolves, next loop
                 if ((getNumberOfLivingWerewolves() == 1) || (!lr_playerRole.nameOfRole.equals("werewolf"))) {
@@ -215,6 +220,7 @@ public class Listen extends ListenerAdapter {
 
     public String getLivingPlayerNames(String iv_nameOfRole) {
         String lv_livingPlayers = "";
+        String lv_output = null;
         for (PlayerRoles lr_roles : ma_playerList) {
             if (!lr_roles.nameOfRole.equals("dead")) {
                 lv_livingPlayers = lv_livingPlayers + " | " + lr_roles.mr_user.getName();
@@ -222,10 +228,12 @@ public class Listen extends ListenerAdapter {
         }
         lv_livingPlayers = lv_livingPlayers.substring(2);
 
+        switch (iv_nameOfRole) {
+            case "werewolf": lv_output = Main.getParameter("translation.csv","Write the name of the victim") + lv_livingPlayers;
+            break;
+        }
 
-
-
-        return lv_livingPlayers;
+        return lv_output;
     }
 
 
