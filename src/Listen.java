@@ -16,7 +16,7 @@ public class Listen extends ListenerAdapter {
     private final JDA mr_jda;
     public final Guild mr_guild;
     private final long mv_serverId;
-    private int mv_gameState;
+    public int mv_gameState;
     private int mv_numberOfLivingPeople;
     private int mv_numberOfLivingWerewolves;
     List<PlayerRoles> ma_playerList;
@@ -30,7 +30,6 @@ public class Listen extends ListenerAdapter {
         mr_guild = mr_jda.getGuildById(mv_serverId);
         ma_playerList = new ArrayList<>();
         mv_gameState = 0;
-        mr_gamestates = new Gamestates (this);
     }
 
     @Override
@@ -47,6 +46,7 @@ public class Listen extends ListenerAdapter {
         if (la_content[1].equals("reset") && (la_content.length == 2)) {
             mv_gameState = 0;
             ma_playerList.clear();
+            mr_gamestates = null;
             //TODO witch reset
         }
         //TODO command to list players
@@ -130,7 +130,10 @@ public class Listen extends ListenerAdapter {
 
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent ir_event) {
-
+        //Initialized here, because I need the amount of werewolves for gamestate1 !
+        if (mr_gamestates == null) {
+            mr_gamestates = new Gamestates(this);
+        }
     }
 
 
