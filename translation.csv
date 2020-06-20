@@ -1,4 +1,4 @@
-//Don't change values before equal sign!
+//Don't change values before equal sign! - The values with the brackets are always replaced by the program -> But you can place them where you want in the sentence!
 citizen=Dorfbewohner
 werewolf=Werwolf
 witch=Hexe

@@ -47,7 +47,6 @@ public class Listen extends ListenerAdapter {
             mv_gameState = 0;
             ma_playerList.clear();
             mr_gamestates = null;
-            //TODO witch reset
         }
         //TODO command to list players
         if (la_content[1].equals("list") && (la_content.length == 2)) {

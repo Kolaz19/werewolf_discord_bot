@@ -2,6 +2,7 @@ import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.api.requests.RestAction;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -36,25 +37,23 @@ public class Gamestates {
             return;
         }
         //Add victim -> based on how many werewolves there are
-        if (ma_choosenByWerewolf[0].isEmpty()) {
+        if (ma_choosenByWerewolf[0] == null) {
             ma_choosenByWerewolf[0] = lv_messageContent;
             if (mr_base.getNumberOfLivingWerewolves() > 1) {
                 return;
             }
         } else if (mr_base.getNumberOfLivingWerewolves() > 1) {
             ma_choosenByWerewolf[1] = lv_messageContent;
-        }
-        //We have to write the actual victim into index[0] of the array to continue
-        //TODO solution if one werewolf dies
-        if (ma_choosenByWerewolf.length != 1) {
+            //We have to write the actual victim into index[0] -> we only use index[0] in the next steps
             ma_choosenByWerewolf[0] = ma_choosenByWerewolf[ThreadLocalRandom.current().nextInt(mr_base.getNumberOfLivingWerewolves())];
         }
+        mr_base.mv_gameState = 2;
         //Send message to witch to save player
         if (mv_witchHasHealPotion == false) {
             return;
         }
         for (PlayerRoles lr_player : mr_base.ma_playerList) {
-            if (lr_player.nameOfRole == "witch") {
+            if (lr_player.nameOfRole.equals("witch")) {
                 String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
                 PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
                 lr_privateChannel.sendMessage(lv_messageToWitch).queue();
@@ -63,7 +62,10 @@ public class Gamestates {
                 lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
             }
         }
-        mr_base.mv_gameState = 2;
+    }
+
+    public void gamestate2 (PrivateMessageReceivedEvent ir_event) {
+        
     }
 
     public boolean isPlayerRole (User ir_userToCheck,String iv_roleToCheck) {
@@ -87,3 +89,6 @@ public class Gamestates {
     }
 
 }
+
+
+//TODO clear array for next message from werewolf (victim)
