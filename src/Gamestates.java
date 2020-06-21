@@ -21,7 +21,7 @@ public class Gamestates {
     }
 
     //Get victims from werewolf, choose victim and send witch message to save or kill someone
-    public void gamestate1 (PrivateMessageReceivedEvent ir_event ) {
+    public void gamestate1 ( PrivateMessageReceivedEvent ir_event ) {
         String lv_messageContent = ir_event.getMessage().getContentRaw();
         if (!isPlayerRole(ir_event.getAuthor(),"werewolf")) {
             return;
@@ -47,9 +47,23 @@ public class Gamestates {
             //We have to write the actual victim into index[0] -> we only use index[0] in the next steps
             ma_choosenByWerewolf[0] = ma_choosenByWerewolf[ThreadLocalRandom.current().nextInt(mr_base.getNumberOfLivingWerewolves())];
         }
-        mr_base.mv_gameState = 2;
-        //Send message to witch to save player
-        if (mv_witchHasHealPotion == false) {
+
+        boolean lv_witchLives = false;
+        //Check if witch lives
+        for (PlayerRoles lr_playerRole : mr_base.ma_playerList) {
+            if (lr_playerRole.nameOfRole.equals("witch")) {
+                lv_witchLives = true;
+            }
+        }
+        if ((!lv_witchLives) || (!mv_witchHasDeathPotion && !mv_witchHasDeathPotion)) {
+            mr_base.mv_gameState = 3;
+            //TODO jump to gamestate 3
+            return;
+        } else {
+            mr_base.mv_gameState = 2;
+        }
+
+        if (!mv_witchHasHealPotion) {
             return;
         }
         for (PlayerRoles lr_player : mr_base.ma_playerList) {
@@ -57,7 +71,7 @@ public class Gamestates {
                 String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
                 PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
                 lr_privateChannel.sendMessage(lv_messageToWitch).queue();
-                String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]?");
+                String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]? (YES/NO)");
                 lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenByWerewolf[0]);
                 lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
             }
@@ -65,6 +79,15 @@ public class Gamestates {
     }
 
     public void gamestate2 (PrivateMessageReceivedEvent ir_event) {
+        String lv_messageContent = ir_event.getMessage().getContentRaw();
+
+        if (!isPlayerRole(ir_event.getAuthor(),"witch")) {
+            return;
+        }
+
+        if (mv_witchHasHealPotion) {
+
+        }
         
     }
 

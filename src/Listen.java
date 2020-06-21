@@ -126,7 +126,6 @@ public class Listen extends ListenerAdapter {
         }
     }
 
-
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent ir_event) {
         //Initialized here, because I need the amount of werewolves for gamestate1 !
@@ -134,7 +133,6 @@ public class Listen extends ListenerAdapter {
             mr_gamestates = new Gamestates(this);
         }
     }
-
 
     public void addPlayer (String iv_displayedName, MessageChannel lr_mChannel) {
         User lr_user = null;
