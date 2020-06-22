@@ -56,32 +56,38 @@ public class Gamestates {
             }
         }
         if ((!lv_witchLives) || (!mv_witchHasDeathPotion && !mv_witchHasDeathPotion)) {
-            mr_base.mv_gameState = 3;
             //TODO jump to gamestate 3
-            return;
-        } else {
-            mr_base.mv_gameState = 2;
-        }
-
-        if (!mv_witchHasHealPotion) {
+            //TODO have to check again in gamestate3 if death potion is there!
             return;
         }
+        //Witch has either heal or death potion, or both.
+        //Either send a message to kill or to save a player
+        //If she can save the player, ask to kill a player in gamestate2, otherwise, ask here and skip to gamestate3
         for (PlayerRoles lr_player : mr_base.ma_playerList) {
             if (lr_player.nameOfRole.equals("witch")) {
-                String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
                 PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
-                lr_privateChannel.sendMessage(lv_messageToWitch).queue();
-                String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]? (YES/NO)");
-                lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenByWerewolf[0]);
-                lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
+                if (mv_witchHasHealPotion) {
+                    mr_base.mv_gameState = 2;
+                    String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]? (YES/NO)");
+                    lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenByWerewolf[0]);
+                    String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
+                    lr_privateChannel.sendMessage(lv_messageToWitch).queue();
+                    lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
+                } else {
+                    mr_base.mv_gameState = 3;
+                    String lv_messagePlayerKill = Main.getParameter("translation.csv","Do you want to kill a player? (YES/Playername)");
+                    lr_privateChannel.sendMessage(lv_messagePlayerKill).queue();
+                    //TODO list player names
+                }
             }
         }
     }
 
+    //Only if witch has heal potion
     public void gamestate2 (PrivateMessageReceivedEvent ir_event) {
         String lv_messageContent = ir_event.getMessage().getContentRaw();
 
-        if (!isPlayerRole(ir_event.getAuthor(),"witch")) {
+        if (!isPlayerRole(ir_event.getAuthor(),"witch") || (!lv_messageContent.equalsIgnoreCase("YES") && !lv_messageContent.equalsIgnoreCase("NO")) ) {
             return;
         }
 
