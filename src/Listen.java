@@ -231,6 +231,8 @@ public class Listen extends ListenerAdapter {
         switch (iv_nameOfRole) {
             case "werewolf": lv_output = Main.getParameter("translation.csv","Write the name of the victim") + lv_livingPlayers;
             break;
+            case "witch": lv_output = Main.getParameter("translation.csv","Selection:") + lv_livingPlayers;
+            break;
         }
 
         return lv_output;

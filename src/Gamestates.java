@@ -75,9 +75,9 @@ public class Gamestates {
                     lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
                 } else {
                     mr_base.mv_gameState = 3;
-                    String lv_messagePlayerKill = Main.getParameter("translation.csv","Do you want to kill a player? (YES/Playername)");
+                    String lv_messagePlayerKill = Main.getParameter("translation.csv","Do you want to kill a player? (NO/Playername)");
                     lr_privateChannel.sendMessage(lv_messagePlayerKill).queue();
-                    //TODO list player names
+                    lr_privateChannel.sendMessage(mr_base.getLivingPlayerNames("witch")).queue();
                 }
             }
         }
@@ -91,11 +91,29 @@ public class Gamestates {
             return;
         }
 
-        if (mv_witchHasHealPotion) {
-
+        if (lv_messageContent.equalsIgnoreCase("YES")) {
+            ma_choosenByWerewolf[0] = null;
+            mv_witchHasHealPotion = false;
         }
+
+        if (mv_witchHasDeathPotion) {
+            for (PlayerRoles lr_player : mr_base.ma_playerList) {
+                if (lr_player.nameOfRole.equals("witch")) {
+                    PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+                    String lv_messagePlayerKill = Main.getParameter("translation.csv","Do you want to kill a player? (YES/Playername)");
+                    lr_privateChannel.sendMessage(lv_messagePlayerKill).queue();
+                    lr_privateChannel.sendMessage(mr_base.getLivingPlayerNames("witch")).queue();
+                }
+            }
+        }
+        mr_base.mv_gameState = 3;
+    }
+
+    public void gamestate3 (PrivateMessageReceivedEvent ir_event) {
         
     }
+        
+
 
     public boolean isPlayerRole (User ir_userToCheck,String iv_roleToCheck) {
         boolean isRole = false;
@@ -121,3 +139,4 @@ public class Gamestates {
 
 
 //TODO clear array for next message from werewolf (victim)
+//TODO Change .equals to equalsIgnoreCase
