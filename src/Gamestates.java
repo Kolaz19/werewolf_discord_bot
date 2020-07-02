@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
 public class Gamestates {
 
     private Listen mr_base;
-    private String ma_choosenByWerewolf[];
+    private String ma_choosenDeath[];
     private boolean mv_witchHasHealPotion, mv_witchHasDeathPotion;
 
     Gamestates (Listen ir_listener) {
         mr_base = ir_listener;
-        ma_choosenByWerewolf = new String[mr_base.getNumberOfLivingWerewolves()];
+        ma_choosenDeath = new String[2];
         mv_witchHasHealPotion = true;
         mv_witchHasDeathPotion = true;
     }
@@ -37,15 +37,16 @@ public class Gamestates {
             return;
         }
         //Add victim -> based on how many werewolves there are
-        if (ma_choosenByWerewolf[0] == null) {
-            ma_choosenByWerewolf[0] = lv_messageContent;
+        if (ma_choosenDeath[0] == null) {
+            ma_choosenDeath[0] = lv_messageContent;
             if (mr_base.getNumberOfLivingWerewolves() > 1) {
                 return;
             }
-        } else if (mr_base.getNumberOfLivingWerewolves() > 1) {
-            ma_choosenByWerewolf[1] = lv_messageContent;
+        } else  {
+            ma_choosenDeath[1] = lv_messageContent;
             //We have to write the actual victim into index[0] -> we only use index[0] in the next steps
-            ma_choosenByWerewolf[0] = ma_choosenByWerewolf[ThreadLocalRandom.current().nextInt(mr_base.getNumberOfLivingWerewolves())];
+            ma_choosenDeath[0] = ma_choosenDeath[ThreadLocalRandom.current().nextInt(mr_base.getNumberOfLivingWerewolves())];
+            ma_choosenDeath[1] = null;
         }
 
         boolean lv_witchLives = false;
@@ -69,7 +70,7 @@ public class Gamestates {
                 if (mv_witchHasHealPotion) {
                     mr_base.mv_gameState = 2;
                     String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]? (YES/NO)");
-                    lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenByWerewolf[0]);
+                    lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenDeath[0]);
                     String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
                     lr_privateChannel.sendMessage(lv_messageToWitch).queue();
                     lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
@@ -92,7 +93,7 @@ public class Gamestates {
         }
 
         if (lv_messageContent.equalsIgnoreCase("YES")) {
-            ma_choosenByWerewolf[0] = null;
+            ma_choosenDeath[0] = null;
             mv_witchHasHealPotion = false;
         }
 
@@ -110,8 +111,36 @@ public class Gamestates {
     }
 
     public void gamestate3 (PrivateMessageReceivedEvent ir_event) {
+        String lv_messageContent = ir_event.getMessage().getContentRaw();
+
+        //Have to make sure that witch responses (if deathpotion avaiable)
+        if (mv_witchHasDeathPotion) {
+            if (isPlayerRole(ir_event.getAuthor(),"witch")) {
+                if (isPlayerLiving(lv_messageContent)) {
+                    ma_choosenDeath[1] = lv_messageContent;
+                    mv_witchHasDeathPotion = false;
+                } else if (!lv_messageContent.equalsIgnoreCase("NO")) {
+                    String lv_outputError = Main.getParameter("translation.csv","Player [NAME] does not exist");
+                    lv_outputError = lv_outputError.replace("[NAME]",lv_messageContent);
+                    ir_event.getAuthor()
+                            .openPrivateChannel()
+                            .complete()
+                            .sendMessage(lv_outputError)
+                            .queue();
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+
         
+
+
+
     }
+
+
         
 
 
