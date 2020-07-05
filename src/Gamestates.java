@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
 public class Gamestates {
 
     private Listen mr_base;
-    private String ma_choosenDeath[];
+    private PlayerRoles ma_choosenDeath[];
     private boolean mv_witchHasHealPotion, mv_witchHasDeathPotion;
 
     Gamestates (Listen ir_listener) {
         mr_base = ir_listener;
-        ma_choosenDeath = new String[2];
+        ma_choosenDeath = new PlayerRoles[2];
         mv_witchHasHealPotion = true;
         mv_witchHasDeathPotion = true;
     }
@@ -38,12 +38,12 @@ public class Gamestates {
         }
         //Add victim -> based on how many werewolves there are
         if (ma_choosenDeath[0] == null) {
-            ma_choosenDeath[0] = lv_messageContent;
+            ma_choosenDeath[0] = getPlayerRolesFromName(lv_messageContent);
             if (mr_base.getNumberOfLivingWerewolves() > 1) {
                 return;
             }
         } else  {
-            ma_choosenDeath[1] = lv_messageContent;
+            ma_choosenDeath[1] = getPlayerRolesFromName(lv_messageContent);
             //We have to write the actual victim into index[0] -> we only use index[0] in the next steps
             ma_choosenDeath[0] = ma_choosenDeath[ThreadLocalRandom.current().nextInt(mr_base.getNumberOfLivingWerewolves())];
             ma_choosenDeath[1] = null;
@@ -56,7 +56,7 @@ public class Gamestates {
                 lv_witchLives = true;
             }
         }
-        if ((!lv_witchLives) || (!mv_witchHasDeathPotion && !mv_witchHasDeathPotion)) {
+        if ((!lv_witchLives) || (!mv_witchHasHealPotion && !mv_witchHasDeathPotion)) {
             //TODO jump to gamestate 3
             //TODO have to check again in gamestate3 if death potion is there!
             return;
@@ -70,7 +70,7 @@ public class Gamestates {
                 if (mv_witchHasHealPotion) {
                     mr_base.mv_gameState = 2;
                     String lv_messagePlayerSave = Main.getParameter("translation.csv","Do you want to save [PLAYER]? (YES/NO)");
-                    lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenDeath[0]);
+                    lv_messagePlayerSave = lv_messagePlayerSave.replace("[PLAYER]",ma_choosenDeath[0].mr_user.getName());
                     String lv_messageToWitch = Main.getParameter("translation.csv","A victim was choosen...");
                     lr_privateChannel.sendMessage(lv_messageToWitch).queue();
                     lr_privateChannel.sendMessage(lv_messagePlayerSave).queueAfter(2, TimeUnit.SECONDS);
@@ -117,7 +117,7 @@ public class Gamestates {
         if (mv_witchHasDeathPotion) {
             if (isPlayerRole(ir_event.getAuthor(),"witch")) {
                 if (isPlayerLiving(lv_messageContent)) {
-                    ma_choosenDeath[1] = lv_messageContent;
+                    ma_choosenDeath[1] = getPlayerRolesFromName(lv_messageContent);
                     mv_witchHasDeathPotion = false;
                 } else if (!lv_messageContent.equalsIgnoreCase("NO")) {
                     String lv_outputError = Main.getParameter("translation.csv","Player [NAME] does not exist");
@@ -132,10 +132,33 @@ public class Gamestates {
             } else {
                 return;
             }
-        }
 
-        
+         //Selection of dead players and role reveal 
+         String lv_resultsOfNight;
+         String lv_resultsRoles;
 
+         if((ma_choosenDeath[0] == null) && (ma_choosenDeath[1] == null)) {
+            lv_resultsOfNight = Main.getParameter("translation.csv","No player died that night!");
+         } else if ((ma_choosenDeath[0] != null) && (ma_choosenDeath[1] != null)) {
+             lv_resultsOfNight = Main.getParameter("translation.csv","[PLAYER1] and [PLAYER2] died that night!");
+             lv_resultsOfNight = lv_resultsOfNight.replace("[PLAYER1]",ma_choosenDeath[0].mr_user.getName()).replace("[PLAYER2]",ma_choosenDeath[1].mr_user.getName());
+             lv_resultsRoles = getTextForRoleReveal(ma_choosenDeath[0]);
+             lv_resultsRoles = lv_resultsRoles + "\n" + getTextForRoleReveal(ma_choosenDeath[1]);
+             ma_choosenDeath[0].nameOfRole = "dead";
+             ma_choosenDeath[1].nameOfRole = "dead";
+         } else if ((ma_choosenDeath[0] != null)) {
+             lv_resultsOfNight = Main.getParameter("translation.csv","[PLAYER] didn't survive the night!");
+             lv_resultsOfNight = lv_resultsOfNight.replace("[PLAYER]",ma_choosenDeath[0].mr_user.getName());
+             lv_resultsRoles = getTextForRoleReveal(ma_choosenDeath[0]);
+             ma_choosenDeath[0].nameOfRole = "dead";
+         } else {
+             lv_resultsOfNight = Main.getParameter("translation.csv","[PLAYER] didn't survive the night!");
+             lv_resultsOfNight = lv_resultsOfNight.replace("[PLAYER]",ma_choosenDeath[1].mr_user.getName());
+             lv_resultsRoles = getTextForRoleReveal(ma_choosenDeath[0]);
+             ma_choosenDeath[1].nameOfRole = "dead";
+         }
+
+         }
 
 
     }
@@ -153,7 +176,6 @@ public class Gamestates {
         }
         return isRole;
     }
-
     public boolean isPlayerLiving (String iv_nameToCheck) {
         boolean lv_exists = false;
         for (PlayerRoles lr_player : mr_base.ma_playerList) {
@@ -162,6 +184,26 @@ public class Gamestates {
             }
         }
         return lv_exists;
+    }
+    public PlayerRoles getPlayerRolesFromName(String ir_accountName) {
+        PlayerRoles lr_rightPlayer = null;
+        for (PlayerRoles lr_player : mr_base.ma_playerList) {
+            if (lr_player.mr_user.getName().equals(ir_accountName)) {
+                    lr_rightPlayer = lr_player;
+            }
+        }
+        return lr_rightPlayer;
+    }
+    public String getTextForRoleReveal (PlayerRoles ir_player) {
+        String lv_output = null;
+        if (ir_player.nameOfRole.equals("werewolf")) {
+            lv_output = Main.getParameter("translation.csv","[PLAYER] died as a werewolf=");
+            lv_output = lv_output.replace("[PLAYER]",ir_player.mr_user.getName());
+        } else {
+            lv_output = Main.getParameter("translation.csv","[PLAYER] died as a citizen=");
+            lv_output = lv_output.replace("[PLAYER]",ir_player.mr_user.getName());
+        }
+        return lv_output;
     }
 
 }
