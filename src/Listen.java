@@ -1,4 +1,3 @@
-import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -19,7 +18,7 @@ public class Listen extends ListenerAdapter {
     public int mv_gameState;
     private int mv_numberOfLivingPeople;
     private int mv_numberOfLivingWerewolves;
-    List<PlayerRoles> ma_playerList;
+    List<PlayerRole> ma_playerList;
     //This class is just to separate the gamelogic from the actual listener (for clarity) -> Could have been also implemented in Listen
     private Gamestates mr_gamestates;
 
@@ -54,7 +53,7 @@ public class Listen extends ListenerAdapter {
             if (ma_playerList.isEmpty()) {
                 lv_playerListMessage = Main.getParameter("translation.csv","No added players yet");
             } else {
-                for (PlayerRoles lr_playerRole : ma_playerList) {
+                for (PlayerRole lr_playerRole : ma_playerList) {
                     lv_playerListMessage = lv_playerListMessage + lr_playerRole.mr_user.getName() + " ";
                 }
             }
@@ -90,7 +89,7 @@ public class Listen extends ListenerAdapter {
             }
 
 
-            for (PlayerRoles lr_playerRole : ma_playerList) {
+            for (PlayerRole lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
                 //Send role to every player
                 String lv_whichRole = Main.getParameter("translation.csv", "You are a [ROLE]");
@@ -111,7 +110,7 @@ public class Listen extends ListenerAdapter {
                     continue;
                 }
                 //Send current werewolf name of partner-werewolf
-                for (PlayerRoles lr_playerRole2 : ma_playerList) {
+                for (PlayerRole lr_playerRole2 : ma_playerList) {
                     if ((lr_playerRole2.nameOfRole.equals("werewolf")) && (lr_playerRole != lr_playerRole2)) {
                         String lv_werewolfFriend = Main.getParameter("translation.csv", "[NAME] is your werewolf brother");
                         lv_werewolfFriend = lv_werewolfFriend.replace("[NAME]", lr_playerRole.mr_user.getName());
@@ -132,6 +131,15 @@ public class Listen extends ListenerAdapter {
         if (mr_gamestates == null) {
             mr_gamestates = new Gamestates(this);
         }
+
+        if (mv_gameState == 1) {
+            mr_gamestates.gamestate1(ir_event);
+        } else if (mv_gameState == 2) {
+            mr_gamestates.gamestate2(ir_event);
+        } else if (mv_gameState == 3) {
+            mr_gamestates.gamestate3(ir_event);
+        }
+
     }
 
     public void addPlayer (String iv_displayedName, MessageChannel lr_mChannel) {
@@ -148,7 +156,7 @@ public class Listen extends ListenerAdapter {
             return;
         }
 
-        PlayerRoles roleToAdd = new PlayerRoles(lr_user);
+        PlayerRole roleToAdd = new PlayerRole(lr_user);
         //Add player and give out success message
         if ((ma_playerList.isEmpty()) || (!ma_playerList.contains(roleToAdd))) {
             ma_playerList.add(roleToAdd);
@@ -161,7 +169,7 @@ public class Listen extends ListenerAdapter {
     public void chooseRoles () {
         int lv_numberOfPlayers = ma_playerList.size();
         boolean lv_randomIsWerewolf;
-        for (PlayerRoles lv_roles : ma_playerList) {
+        for (PlayerRole lv_roles : ma_playerList) {
             lv_roles.nameOfRole = "citizen";
         }
 
@@ -200,11 +208,14 @@ public class Listen extends ListenerAdapter {
         }
         mv_numberOfLivingPeople = 0;
         mv_numberOfLivingWerewolves = 0;
-        for (PlayerRoles lr_playerRoles : ma_playerList) {
-            switch (lr_playerRoles.nameOfRole) {
+        for (PlayerRole lr_playerRole : ma_playerList) {
+            switch (lr_playerRole.nameOfRole) {
                 case "citizen": mv_numberOfLivingPeople++;
+                                break;
                 case "witch": mv_numberOfLivingPeople++;
+                                break;
                 case "werewolf" : mv_numberOfLivingWerewolves++;
+                                break;
             }
         }
     }
@@ -221,7 +232,7 @@ public class Listen extends ListenerAdapter {
     public String getLivingPlayerNames(String iv_nameOfRole) {
         String lv_livingPlayers = "";
         String lv_output = null;
-        for (PlayerRoles lr_roles : ma_playerList) {
+        for (PlayerRole lr_roles : ma_playerList) {
             if (!lr_roles.nameOfRole.equals("dead")) {
                 lv_livingPlayers = lv_livingPlayers + " | " + lr_roles.mr_user.getName();
             }
@@ -232,6 +243,8 @@ public class Listen extends ListenerAdapter {
             case "werewolf": lv_output = Main.getParameter("translation.csv","Write the name of the victim") + lv_livingPlayers;
             break;
             case "witch": lv_output = Main.getParameter("translation.csv","Selection:") + lv_livingPlayers;
+            break;
+            case "citizen": lv_output = Main.getParameter("translation.csv","Choose a citizen that should be hanged(\"NO\" for abstention)!") + "\n" + lv_livingPlayers;
             break;
         }
 

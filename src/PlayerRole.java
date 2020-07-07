@@ -1,10 +1,10 @@
 import net.dv8tion.jda.api.entities.User;
 
-public class PlayerRoles {
+public class PlayerRole {
         User mr_user;
         String nameOfRole;
 
-        PlayerRoles (User ir_user) {
+        PlayerRole(User ir_user) {
             mr_user = ir_user;
         }
 
