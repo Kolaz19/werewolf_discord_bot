@@ -29,3 +29,5 @@ No player died that night!=Diese Nacht wurde niemand im Dorf getötet!
 Hungry wolves are still in our series=Hungrige Wölfe geben sich immer noch als brave Bürger aus.
 It's time for all citizens to make a decision=Es wird Zeit für alle Bürger, eine Entscheidung zu treffen.
 Choose a citizen that should be hanged("NO" for abstention)!=Wählt einen Bürger aus, der gehängt werden soll ("NO" für Enthaltung)!
+[PLAYER1] has voted for [PLAYER2] for elimination=[PLAYER1] hat [PLAYER2] zur Elimination ausgewählt.
+[PLAYER] has choosen noone=[PLAYER] enthält sich seiner Stimme.

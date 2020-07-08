@@ -34,6 +34,10 @@ public class Listen extends ListenerAdapter {
     @Override
     public void onMessageReceived(MessageReceivedEvent ir_event) {
 
+        if (ir_event.getAuthor().isBot()) {
+            return;
+        }
+
         String[] la_content = ir_event.getMessage()
                                       .getContentRaw()
                                       .split(" ");
@@ -127,10 +131,15 @@ public class Listen extends ListenerAdapter {
 
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent ir_event) {
+        if (ir_event.getAuthor().isBot()) {
+            return;
+        }
         //Initialized here, because I need the amount of werewolves for gamestate1 !
         if (mr_gamestates == null) {
             mr_gamestates = new Gamestates(this);
         }
+
+        mv_gameState = 4;
 
         if (mv_gameState == 1) {
             mr_gamestates.gamestate1(ir_event);
@@ -138,6 +147,8 @@ public class Listen extends ListenerAdapter {
             mr_gamestates.gamestate2(ir_event);
         } else if (mv_gameState == 3) {
             mr_gamestates.gamestate3(ir_event);
+        } else if (mv_gameState == 4) {
+            mr_gamestates.gamestate4(ir_event);
         }
 
     }
