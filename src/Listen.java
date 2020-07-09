@@ -139,8 +139,6 @@ public class Listen extends ListenerAdapter {
             mr_gamestates = new Gamestates(this);
         }
 
-        mv_gameState = 4;
-
         if (mv_gameState == 1) {
             mr_gamestates.gamestate1(ir_event);
         } else if (mv_gameState == 2) {

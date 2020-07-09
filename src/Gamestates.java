@@ -156,23 +156,22 @@ public class Gamestates {
         } else {
             lv_resultsOfNight = Main.getParameter("translation.csv", "[PLAYER] didn't survive the night!");
             lv_resultsOfNight = lv_resultsOfNight.replace("[PLAYER]", ma_choosenDeath[1].mr_user.getName());
-            lv_resultsRoles = getTextForRoleReveal(ma_choosenDeath[0]);
+            lv_resultsRoles = getTextForRoleReveal(ma_choosenDeath[1]);
             ma_choosenDeath[1].nameOfRole = "dead";
         }
 
         String lv_livingPlayersToChoose = mr_base.getLivingPlayerNames("citizen");
         for (PlayerRole lr_player : mr_base.ma_playerList) {
-            if (!lr_player.nameOfRole.equals("dead")) {
                 PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
                 lr_privateChannel.sendMessage(lv_resultsOfNight).queue();
-                if ((ma_choosenDeath[0] == null) && (ma_choosenDeath[1] == null)) {
+                if ((ma_choosenDeath[0] != null) && (ma_choosenDeath[1] != null)) {
                     lr_privateChannel.sendMessage(lv_resultsRoles).queueAfter(3, TimeUnit.SECONDS);
                 }
                 lr_privateChannel.sendMessage(Main.getParameter("translation.csv", "Hungry wolves are still in our series")).queueAfter(6, TimeUnit.SECONDS);
                 lr_privateChannel.sendMessage(Main.getParameter("translation.csv", "It's time for all citizens to make a decision")).queueAfter(7, TimeUnit.SECONDS);
                 lr_privateChannel.sendMessage(lv_livingPlayersToChoose).queueAfter(10, TimeUnit.SECONDS);
-            }
         }
+
         ma_choosenDeath[0] = null;
         ma_choosenDeath[1] = null;
         mr_base.mv_gameState = 4;
@@ -186,8 +185,12 @@ public class Gamestates {
         String lv_messageContent = ir_event.getMessage().getContentRaw();
 
         int lv_numberOfLivingPlayers = ma_choosenHanged.length;
+
+        if (isPlayerRole(ir_event.getAuthor(),"dead")) {
+            return;
+        }
         
-        if (((!isPlayerLiving(lv_messageContent)) || (!lv_messageContent.equalsIgnoreCase("NO"))) && (isPlayerRole(ir_event.getAuthor(), "dead"))) {
+        if ((!isPlayerLiving(lv_messageContent)) && (!lv_messageContent.equalsIgnoreCase("NO"))) {
             String lv_playerNotExisting = Main.getParameter("translation.csv","Player [NAME] does not exist");
             lv_playerNotExisting = lv_playerNotExisting.replace("[NAME]",lv_messageContent);
             ir_event.getAuthor()
@@ -201,36 +204,68 @@ public class Gamestates {
         String lv_forElimination = "";
 
         for (int lv_loop = 0; lv_loop < lv_numberOfLivingPlayers; lv_loop++) {
-            if ((ma_choosenHanged[lv_loop][1] == null) || (ma_choosenHanged[lv_loop][1].mr_user == ir_event.getAuthor())) {
+            if ((ma_choosenHanged[lv_loop][1] == null) || (ma_choosenHanged[lv_loop][1].mr_user.equals(ir_event.getAuthor()))) { //TODO hier testen ob equals funktioniert  
 
                 if (lv_messageContent.equalsIgnoreCase("NO")) {
                     ma_choosenHanged[lv_loop][0] = null;
                     ma_choosenHanged[lv_loop][1] = getPlayerRoleFromName(ir_event.getAuthor().getName());
-                    lv_forElimination = Main.getParameter("translation.csv","[PLAYER] has choosen noone");
-                    lv_forElimination = lv_forElimination.replace("[PLAYER]",ir_event.getAuthor().getName());
+                    lv_forElimination = Main.getParameter("translation.csv", "[PLAYER] has choosen noone");
+                    lv_forElimination = lv_forElimination.replace("[PLAYER]", ir_event.getAuthor().getName());
                 } else {
                     ma_choosenHanged[lv_loop][0] = getPlayerRoleFromName(lv_messageContent);
                     ma_choosenHanged[lv_loop][1] = getPlayerRoleFromName(ir_event.getAuthor().getName());
                     lv_forElimination = Main.getParameter("translation.csv", "[PLAYER1] has voted for [PLAYER2] for elimination");
-                    lv_forElimination = lv_forElimination.replace("[PLAYER1]",ir_event.getAuthor().getName()).replace("[PLAYER2]",lv_messageContent);
+                    lv_forElimination = lv_forElimination.replace("[PLAYER1]", ir_event.getAuthor().getName()).replace("[PLAYER2]", lv_messageContent);
                 }
+                break;
             }
+        }
             //Send message to notify everyone what choice the player made
          for (PlayerRole lr_playerRole : mr_base.ma_playerList) {
-             if (!lr_playerRole.nameOfRole.equals("dead")) {
                  PrivateChannel lr_privateChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
                  lr_privateChannel.sendMessage(lv_forElimination).queue();
-             }
          }
 
-            //If last entry of array is empty, there are players left to vote
+         //If last entry of array is empty, there are players left to vote
          if (ma_choosenHanged[lv_numberOfLivingPlayers - 1][1] == null) {
              return;
          }
 
+         //Choose player out of array
+         PlayerRole lr_choosenPlayer = null;
+         PlayerRole lr_playerLoop;
+         int lv_loop = lv_numberOfLivingPlayers;
+         int lv_count = 0;
+         int lv_rememberCount = 0;
+         boolean lv_redundant = false;
+
+         while (lv_loop != 0) {
+             lr_playerLoop = ma_choosenHanged[lv_loop-1][0];
+             for (PlayerRole[] lr_personHanged : ma_choosenHanged) {
+                if (lr_personHanged[0] == lr_playerLoop) {
+                    lv_count++;
+                }
+             }
+             if ((lv_count == lv_rememberCount) && (lr_playerLoop != lr_choosenPlayer)) {
+                lv_redundant = true;
+             } else if (lv_count > lv_rememberCount) {
+                 lr_choosenPlayer = lr_playerLoop;
+                 lv_redundant = false;
+             }
+             lv_rememberCount = lv_count;
+             lv_count = 0;
+             lv_loop--;
+         }
+
+         lv_count = 0;
+
+
+
+
+
 
         }
-    }
+
 
 
         public boolean isPlayerRole (User ir_userToCheck, String iv_roleToCheck){
@@ -245,7 +280,7 @@ public class Gamestates {
         public boolean isPlayerLiving (String iv_nameToCheck){
             boolean lv_exists = false;
             for (PlayerRole lr_player : mr_base.ma_playerList) {
-                if (lr_player.mr_user.getName().equals(iv_nameToCheck) && (lr_player.nameOfRole != "dead")) {
+                if (lr_player.mr_user.getName().equalsIgnoreCase(iv_nameToCheck) && (lr_player.nameOfRole != "dead")) {
                     lv_exists = true;
                 }
             }
