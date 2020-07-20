@@ -14,12 +14,14 @@ public class Gamestates {
     private PlayerRole ma_choosenDeath[];
     private PlayerRole ma_choosenHanged[][];
     private boolean mv_witchHasHealPotion, mv_witchHasDeathPotion;
+    private boolean mv_secondVote;
 
     Gamestates(Listen ir_listener) {
         mr_base = ir_listener;
         ma_choosenDeath = new PlayerRole[2];
         mv_witchHasHealPotion = true;
         mv_witchHasDeathPotion = true;
+        mv_secondVote = false;
     }
 
     //Get victims from werewolf, choose victim and send witch message to save or kill someone
@@ -251,13 +253,53 @@ public class Gamestates {
              } else if (lv_count > lv_rememberCount) {
                  lr_choosenPlayer = lr_playerLoop;
                  lv_redundant = false;
+                 lv_rememberCount = lv_count;
              }
-             lv_rememberCount = lv_count;
              lv_count = 0;
              lv_loop--;
          }
+         //Check if two options have the same amount of votes -> Repeat gamestate4 ONCE every round (mv_secondVote)
+         if (lv_redundant){
+             if (mv_secondVote) {
+                lr_choosenPlayer = null;
+                mv_secondVote = false;
+             } else {
+                 String lv_noConclusion = Main.getParameter("translation.csv", "No player could be clearly choosen");
+                 String lv_voteAgain = Main.getParameter("translation.csv", "Everyone can vote once again");
+                 for (PlayerRole lr_player : mr_base.ma_playerList) {
+                     PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+                     lr_privateChannel.sendMessage(lv_noConclusion).queue();
+                     lr_privateChannel.sendMessage(lv_voteAgain).queueAfter(2, TimeUnit.SECONDS);
+                 }
+                 ma_choosenHanged = new PlayerRole[ma_choosenHanged.length][2];
+                 mv_secondVote = true;
+                 return;
+             }
+         }
 
-         lv_count = 0;
+        //Message to players
+         String lv_conclusion;
+         String lv_conclusionPlayer;
+         if (lr_choosenPlayer == null) {
+             if (lv_redundant) {
+                 lv_conclusion = Main.getParameter("translation.csv", "The citizens could not come to a conclusion");
+             } else {
+                 lv_conclusion = Main.getParameter("translation.csv","The citizens did come to a conclusion");
+             }
+             lv_conclusionPlayer = Main.getParameter("translation.csv", "Noone will be hanged");
+         } else {
+             lv_conclusion = Main.getParameter("translation.csv","The citizens did come to a conclusion");
+             lv_conclusionPlayer = Main.getParameter("translation.csv","Player [PLAYER] will be hanged");
+             lv_conclusionPlayer = lv_conclusionPlayer.replace("[PLAYER]",lr_choosenPlayer.mr_user.getName());
+         }
+
+        for (PlayerRole lr_player : mr_base.ma_playerList) {
+            PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+            lr_privateChannel.sendMessage(lv_conclusion).queueAfter(3,TimeUnit.SECONDS);
+            lr_privateChannel.sendMessage(lv_conclusionPlayer).queueAfter(4,TimeUnit.SECONDS);
+        }
+
+        lr_choosenPlayer.nameOfRole = "dead";
 
 
 
