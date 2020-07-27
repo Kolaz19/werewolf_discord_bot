@@ -20,7 +20,7 @@ public class Listen extends ListenerAdapter {
     private int mv_numberOfLivingWerewolves;
     List<PlayerRole> ma_playerList;
     //This class is just to separate the gamelogic from the actual listener (for clarity) -> Could have been also implemented in Listen
-    private Gamestates mr_gamestates;
+    public Gamestates mr_gamestates;
 
 
     Listen(JDA ir_jda) throws IOException {
@@ -51,7 +51,7 @@ public class Listen extends ListenerAdapter {
             ma_playerList.clear();
             mr_gamestates = null;
         }
-        //TODO command to list players
+        // command to list players
         if (la_content[1].equals("list") && (la_content.length == 2)) {
             String lv_playerListMessage = Main.getParameter("translation.csv","Added players:") + " ";
             if (ma_playerList.isEmpty()) {

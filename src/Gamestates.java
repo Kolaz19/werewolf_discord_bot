@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit;
 public class Gamestates {
 
     private Listen mr_base;
-    private PlayerRole ma_choosenDeath[];
-    private PlayerRole ma_choosenHanged[][];
+    private PlayerRole[] ma_choosenDeath;
+    private PlayerRole[][] ma_choosenHanged;
     private boolean mv_witchHasHealPotion, mv_witchHasDeathPotion;
     private boolean mv_secondVote;
 
@@ -61,6 +61,8 @@ public class Gamestates {
             }
         }
         if ((!lv_witchLives) || (!mv_witchHasHealPotion && !mv_witchHasDeathPotion)) {
+            //For gamestate3 (check if deathpotion avaiable)
+            mv_witchHasDeathPotion = false;
             gamestate3(ir_event);
             return;
         }
@@ -86,7 +88,6 @@ public class Gamestates {
             }
         }
     }
-
     //Only if witch has heal potion
     public void gamestate2(PrivateMessageReceivedEvent ir_event) {
         String lv_messageContent = ir_event.getMessage().getContentRaw();
@@ -115,6 +116,7 @@ public class Gamestates {
 
     public void gamestate3(PrivateMessageReceivedEvent ir_event) {
         String lv_messageContent = ir_event.getMessage().getContentRaw();
+
 
         //Have to make sure that witch responses (if deathpotion avaiable)
         if (mv_witchHasDeathPotion) {
@@ -162,13 +164,21 @@ public class Gamestates {
             ma_choosenDeath[1].nameOfRole = "dead";
         }
 
+        for (PlayerRole lr_player : mr_base.ma_playerList) {
+            PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+            lr_privateChannel.sendMessage(lv_resultsOfNight).queue();
+            if ((ma_choosenDeath[0] != null) && (ma_choosenDeath[1] != null)) {
+                lr_privateChannel.sendMessage(lv_resultsRoles).queueAfter(3, TimeUnit.SECONDS);
+            }
+        }
+
+       if(winCondition()) {
+           return;
+       }
+
         String lv_livingPlayersToChoose = mr_base.getLivingPlayerNames("citizen");
         for (PlayerRole lr_player : mr_base.ma_playerList) {
                 PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
-                lr_privateChannel.sendMessage(lv_resultsOfNight).queue();
-                if ((ma_choosenDeath[0] != null) && (ma_choosenDeath[1] != null)) {
-                    lr_privateChannel.sendMessage(lv_resultsRoles).queueAfter(3, TimeUnit.SECONDS);
-                }
                 lr_privateChannel.sendMessage(Main.getParameter("translation.csv", "Hungry wolves are still in our series")).queueAfter(6, TimeUnit.SECONDS);
                 lr_privateChannel.sendMessage(Main.getParameter("translation.csv", "It's time for all citizens to make a decision")).queueAfter(7, TimeUnit.SECONDS);
                 lr_privateChannel.sendMessage(lv_livingPlayersToChoose).queueAfter(10, TimeUnit.SECONDS);
@@ -206,7 +216,7 @@ public class Gamestates {
         String lv_forElimination = "";
 
         for (int lv_loop = 0; lv_loop < lv_numberOfLivingPlayers; lv_loop++) {
-            if ((ma_choosenHanged[lv_loop][1] == null) || (ma_choosenHanged[lv_loop][1].mr_user.equals(ir_event.getAuthor()))) { //TODO hier testen ob equals funktioniert  
+            if ((ma_choosenHanged[lv_loop][1] == null) || (ma_choosenHanged[lv_loop][1].mr_user.equals(ir_event.getAuthor()))) {
 
                 if (lv_messageContent.equalsIgnoreCase("NO")) {
                     ma_choosenHanged[lv_loop][0] = null;
@@ -299,13 +309,54 @@ public class Gamestates {
             lr_privateChannel.sendMessage(lv_conclusionPlayer).queueAfter(4,TimeUnit.SECONDS);
         }
 
-        lr_choosenPlayer.nameOfRole = "dead";
+        //Only when a player was hanged, reveal his role
+        if (lr_choosenPlayer != null) {
+            String lv_roleReveal;
+            if (lr_choosenPlayer.nameOfRole.equals("werewolf")) {
+                lv_roleReveal = Main.getParameter("translation.csv", "[PLAYER] died as a werewolf");
+            } else {
+                lv_roleReveal = Main.getParameter("translation.csv", "[PLAYER] died as a citizen");
+            }
+            lv_roleReveal  = lv_roleReveal.replace("[PLAYER]",lr_choosenPlayer.mr_user.getName());
+            lr_choosenPlayer.nameOfRole = "dead";
+
+            for (PlayerRole lr_player : mr_base.ma_playerList) {
+                PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+                lr_privateChannel.sendMessage(lv_roleReveal).queueAfter(6,TimeUnit.SECONDS);
+            }
+        }
+
+        if(winCondition()) {
+            return;
+        }
 
 
+        //Night time and werewolves can choose victim again
+        String lv_goHome = Main.getParameter("translation.csv","The citizens are getting tired and go home");
+        String lv_nightTime = Main.getParameter("translation.csv","The night comes and all citizens go to sleep");
+        String lv_nextVictim;
+        String lv_chooseNext;
 
+        if (mr_base.getNumberOfLivingWerewolves() != 1) {
+            lv_nextVictim = Main.getParameter("translation.csv", "The werewolves pick their next victim...");
+            lv_chooseNext = Main.getParameter("translation.csv","Choose the next victim with your brothers");
+        } else {
+            lv_nextVictim = Main.getParameter("translation.csv","The werewolf picks his next victim...");
+            lv_chooseNext = Main.getParameter("translation.csv","Pick your next victim");
+        }
 
+        for (PlayerRole lr_player : mr_base.ma_playerList) {
+            PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+            lr_privateChannel.sendMessage(lv_goHome).queueAfter(7,TimeUnit.SECONDS);
+            lr_privateChannel.sendMessage(lv_nextVictim).queueAfter(8,TimeUnit.SECONDS);
 
+            if (lr_player.nameOfRole.equals("werewolf")) {
+                lr_privateChannel.sendMessage(lv_chooseNext).queueAfter(9, TimeUnit.SECONDS);
+                lr_privateChannel.sendMessage(mr_base.getLivingPlayerNames("werewolf")).queueAfter(10,TimeUnit.SECONDS);
+            }
+        }
 
+        mr_base.mv_gameState = 1;
         }
 
 
@@ -348,10 +399,41 @@ public class Gamestates {
             }
             return lv_output;
         }
+        public boolean winCondition () {
+            boolean lv_win = false;
+            boolean lv_witchLives = false;
+            //Check if witch lives
+            for (PlayerRole lr_playerRole : mr_base.ma_playerList) {
+                if (lr_playerRole.nameOfRole.equals("witch")) {
+                    lv_witchLives = true;
+                }
+            }
+            String lv_noLeft = "";
+            String lv_haveWon = "";
+
+            if (mr_base.getNumberOfLivingWerewolves() == 0) {
+                lv_win = true;
+                lv_noLeft = Main.getParameter("translation.csv","There is no werewolf left!");
+                lv_haveWon = Main.getParameter("translation.csv","The citizens have won!");
+            } else if ((mr_base.getNumberOfLivingWerewolves() >= mr_base.getNumberOfLivingPeople()) && !mv_witchHasHealPotion && !mv_witchHasDeathPotion && !lv_witchLives) {
+                lv_win = true;
+                lv_noLeft = Main.getParameter("translation.csv","The citizens have no chance anymore against the werewolves");
+                lv_haveWon = Main.getParameter("translation.csv","The werewolves win!");
+            }
+
+            if (lv_win) {
+
+                for (PlayerRole lr_player : mr_base.ma_playerList) {
+                    PrivateChannel lr_privateChannel = lr_player.mr_user.openPrivateChannel().complete();
+                    lr_privateChannel.sendMessage(lv_noLeft).queue();
+                    lr_privateChannel.sendMessage(lv_haveWon).queueAfter(2,TimeUnit.SECONDS);
+                }
+                mr_base.mv_gameState = 0;
+                mr_base.mr_gamestates = null; //TODO does this dump? Because delete reference to THIS object
+                mr_base.ma_playerList.clear();
+            }
+            return lv_win;
+
+        }
 
     }
-
-
-
-//TODO clear array for next message from werewolf (victim)
-//TODO Change .equals to equalsIgnoreCase
