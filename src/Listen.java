@@ -73,7 +73,7 @@ public class Listen extends ListenerAdapter {
 
         if (la_content[1].equals("start") && (mv_gameState == 0) && (la_content.length == 2)) {
             //Check if enough players
-            if (ma_playerList.size() < 2) { //TODO change back to 5
+            if (ma_playerList.size() < 5) {
                 ir_event.getChannel()
                         .sendMessage(Main.getParameter("translation.csv", "Not enough players to start"))
                         .queue();
@@ -92,7 +92,9 @@ public class Listen extends ListenerAdapter {
                 lv_infoChooseFirstVictim = Main.getParameter("translation.csv","The werewolf does choose it's first victim now...");
             }
 
-
+            lv_chooseFirstVictim = "`" + lv_chooseFirstVictim + "`";
+            String lv_playerNames = getLivingPlayerNames("werewolf");
+            lv_playerNames = "`" + lv_playerNames + "`";
             for (PlayerRole lr_playerRole : ma_playerList) {
                 PrivateChannel lr_tempChannel = lr_playerRole.mr_user.openPrivateChannel().complete();
                 //Send role to every player
@@ -105,7 +107,7 @@ public class Listen extends ListenerAdapter {
                 //Send wolves the message to choose the first victim or give the other players the info that they are doing it
                 if (lr_playerRole.nameOfRole.equals("werewolf")) {
                     lr_tempChannel.sendMessage(lv_chooseFirstVictim).queueAfter(10, TimeUnit.SECONDS);
-                    lr_tempChannel.sendMessage(getLivingPlayerNames("werewolf")).queueAfter(12,TimeUnit.SECONDS);
+                    lr_tempChannel.sendMessage(lv_playerNames).queueAfter(12,TimeUnit.SECONDS);
                 } else {
                     lr_tempChannel.sendMessage(lv_infoChooseFirstVictim).queueAfter(10,TimeUnit.SECONDS);
                 }
