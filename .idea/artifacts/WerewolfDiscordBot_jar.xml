@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="WerewolfDiscordBot:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/WerewolfDiscordBot_jar</output-path>
+    <root id="archive" name="WerewolfDiscordBot.jar">
+      <element id="module-output" name="WerewolfDiscordBot" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/JDA-4.1.1_137-withDependencies.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jda-utilities-2.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/slf4j-nop-1.7.30.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

@@ -23,6 +23,7 @@ public class Gamestates {
 
     //Get victims from werewolf, choose victim and send witch message to save or kill someone
     public void gamestate1(PrivateMessageReceivedEvent ir_event) {
+
         String lv_messageContent = ir_event.getMessage().getContentRaw();
         if (!isPlayerRole(ir_event.getAuthor(), "werewolf")) {
             return;
@@ -445,7 +446,6 @@ public class Gamestates {
                     lr_privateChannel.sendMessage(lv_haveWon).queueAfter(13,TimeUnit.SECONDS);
                 }
                 mr_base.mv_gameState = 0;
-                mr_base.mr_gamestates = null; //TODO does this dump? Because delete reference to THIS object
                 mr_base.ma_playerList.clear();
             }
             return lv_win;

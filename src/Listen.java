@@ -80,6 +80,8 @@ public class Listen extends ListenerAdapter {
                 return;
             }
             chooseRoles();
+            //Clearing if second run
+            mr_gamestates = null;
 
             //Choose text to kill the first victim based on amount of werewolves
             String lv_chooseFirstVictim;
@@ -133,7 +135,7 @@ public class Listen extends ListenerAdapter {
 
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent ir_event) {
-        if (ir_event.getAuthor().isBot()) {
+        if ((ir_event.getAuthor().isBot()) || (mv_gameState == 0)) {
             return;
         }
         //Initialized here, because I need the amount of werewolves for gamestate1 !
